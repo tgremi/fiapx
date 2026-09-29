@@ -57,8 +57,7 @@ fiapx/
 │  └─ k8s/                     # manifests Kubernetes
 ├─ docs/
 │  ├─ adr/                     # Architecture Decision Records (ADR-001..004)
-│  ├─ architecture/c4.md       # diagramas C4 (contexto/container/componente)
-│  └─ video-roteiro.md         # roteiro do vídeo de apresentação (≤10 min)
+│  └─ architecture/c4.md       # diagramas C4 (contexto/container/componente)
 ├─ scripts/
 │  └─ smoke-test.sh            # smoke test end-to-end (fluxo feliz + falha + S3)
 ├─ docker-compose.yml
@@ -207,7 +206,6 @@ independentes (ADR-005), a esteira de um roda só quando aquele serviço muda.
 
 - [x] Documentação da arquitetura proposta (`docs/` — ADRs + C4)
 - [x] Script de criação do banco (`infra/db/init.sql`)
-- [x] Roteiro do vídeo (`docs/video-roteiro.md`)
 - [ ] Link do GitHub
 - [ ] Vídeo gravado (≤ 10 min)
 
