@@ -27,9 +27,19 @@ type videoUploadedEvent struct {
 	OriginalKey string `json:"original_key"`
 }
 
+type amqpChannel interface {
+	ExchangeDeclare(name, kind string, durable, autoDelete, internal, noWait bool, args amqp091.Table) error
+	QueueDeclare(name string, durable, autoDelete, exclusive, noWait bool, args amqp091.Table) (amqp091.Queue, error)
+	QueueBind(name, key, exchange string, noWait bool, args amqp091.Table) error
+	Qos(prefetchCount, prefetchSize int, global bool) error
+	Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool, args amqp091.Table) (<-chan amqp091.Delivery, error)
+	Publish(exchange, key string, mandatory, immediate bool, msg amqp091.Publishing) error
+	Close() error
+}
+
 type Consumer struct {
 	conn    *amqp091.Connection
-	ch      *amqp091.Channel
+	ch      amqpChannel
 	usecase *application.ProcessingUseCase
 }
 
@@ -55,7 +65,7 @@ func NewConsumer(url string, usecase *application.ProcessingUseCase) (*Consumer,
 	return &Consumer{conn: conn, ch: ch, usecase: usecase}, nil
 }
 
-func declareTopology(ch *amqp091.Channel) error {
+func declareTopology(ch amqpChannel) error {
 	if err := ch.ExchangeDeclare(exchangeName, "topic", true, false, false, false, nil); err != nil {
 		return err
 	}

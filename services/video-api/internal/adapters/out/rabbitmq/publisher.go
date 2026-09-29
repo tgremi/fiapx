@@ -21,9 +21,17 @@ type videoUploadedEvent struct {
 	OriginalKey string `json:"original_key"`
 }
 
+type amqpChannel interface {
+	ExchangeDeclare(name, kind string, durable, autoDelete, internal, noWait bool, args amqp.Table) error
+	QueueDeclare(name string, durable, autoDelete, exclusive, noWait bool, args amqp.Table) (amqp.Queue, error)
+	QueueBind(name, key, exchange string, noWait bool, args amqp.Table) error
+	PublishWithContext(ctx context.Context, exchange, key string, mandatory, immediate bool, msg amqp.Publishing) error
+	Close() error
+}
+
 type Publisher struct {
 	conn *amqp.Connection
-	ch   *amqp.Channel
+	ch   amqpChannel
 }
 
 func NewPublisher(url string) (*Publisher, error) {
