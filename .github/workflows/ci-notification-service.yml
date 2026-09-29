@@ -1,6 +1,7 @@
 name: CI — notification-service
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
