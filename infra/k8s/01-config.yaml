@@ -1,0 +1,29 @@
+# Segredos (valores sensíveis). Em produção, usar um Secret Manager (Vault, SOPS, etc.).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: fiapx-secrets
+  namespace: fiapx
+type: Opaque
+stringData:
+  POSTGRES_USER: fiapx
+  POSTGRES_PASSWORD: fiapx
+  JWT_SECRET: dev-secret-change-me
+  RABBITMQ_USER: fiapx
+  RABBITMQ_PASS: fiapx
+---
+# Configuração não sensível compartilhada.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fiapx-config
+  namespace: fiapx
+data:
+  POSTGRES_DB: fiapx
+  SMTP_HOST: mailhog
+  SMTP_PORT: "1025"
+  SMTP_FROM: no-reply@fiapx.com
+  STORAGE_DRIVER: s3
+  S3_ENDPOINT: s3:8333
+  S3_BUCKET: fiapx
+  S3_REGION: us-east-1

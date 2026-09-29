@@ -1,0 +1,33 @@
+# Env / segredos
+.env
+*.env
+!*.env.example
+
+# Go
+bin/
+*.exe
+*.test
+*.out
+vendor/
+
+# Build / artefatos
+dist/
+outputs/
+uploads/
+temp/
+data/
+coverage/
+*.out
+
+# IDE / SO
+.DS_Store
+.idea/
+.vscode/
+
+# Grafana / dados locais
+grafana-data/
+
+# Testes / mídia local
+test.mp4
+invalido.mp4
+frames.zip

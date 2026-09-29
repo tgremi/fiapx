@@ -1,0 +1,211 @@
+# Infraestrutura (demo, sem persistência). Para produção, usar operadores/managed:
+# PostgreSQL (Cloud SQL/RDS), Redis (ElastiCache), RabbitMQ (Amazon MQ) e storage S3.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fiapx-s3-config
+  namespace: fiapx
+data:
+  s3.json: |
+    {
+      "identities": [
+        {
+          "name": "fiapx",
+          "credentials": [
+            { "accessKey": "test", "secretKey": "test" }
+          ],
+          "actions": ["Admin", "Read", "Write"]
+        }
+      ]
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: s3
+  namespace: fiapx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: s3
+  template:
+    metadata:
+      labels:
+        app: s3
+    spec:
+      containers:
+        - name: s3
+          image: chrislusf/seaweedfs:3.80
+          command: ["server", "-s3", "-s3.config=/etc/seaweedfs/s3.json"]
+          ports:
+            - containerPort: 8333
+          volumeMounts:
+            - name: s3-config
+              mountPath: /etc/seaweedfs
+      volumes:
+        - name: s3-config
+          configMap:
+            name: fiapx-s3-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: s3
+  namespace: fiapx
+spec:
+  selector:
+    app: s3
+  ports:
+    - port: 8333
+      targetPort: 8333
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: fiapx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef: { name: fiapx-secrets, key: POSTGRES_USER }
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: fiapx-secrets, key: POSTGRES_PASSWORD }
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef: { name: fiapx-config, key: POSTGRES_DB }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: fiapx
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: fiapx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: fiapx
+spec:
+  selector:
+    app: redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+  namespace: fiapx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3-management-alpine
+          ports:
+            - containerPort: 5672
+            - containerPort: 15672
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              valueFrom:
+                secretKeyRef: { name: fiapx-secrets, key: RABBITMQ_USER }
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef: { name: fiapx-secrets, key: RABBITMQ_PASS }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+  namespace: fiapx
+spec:
+  selector:
+    app: rabbitmq
+  ports:
+    - port: 5672
+      targetPort: 5672
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mailhog
+  namespace: fiapx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mailhog
+  template:
+    metadata:
+      labels:
+        app: mailhog
+    spec:
+      containers:
+        - name: mailhog
+          image: mailhog/mailhog:latest
+          ports:
+            - containerPort: 1025
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mailhog
+  namespace: fiapx
+spec:
+  selector:
+    app: mailhog
+  ports:
+    - port: 1025
+      targetPort: 1025

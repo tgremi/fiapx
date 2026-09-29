@@ -1,0 +1,65 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 0,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Requisições HTTP (por status)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "custom": {} }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        { "expr": "sum by (service, status) (rate(http_requests_total[5m]))", "legendFormat": "{{service}} {{status}}", "refId": "A" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Uploads e downloads de vídeo",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "custom": {} }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        { "expr": "sum(rate(videos_uploaded_total[5m]))", "legendFormat": "uploads", "refId": "A" },
+        { "expr": "sum(rate(videos_downloaded_total[5m]))", "legendFormat": "downloads", "refId": "B" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Vídeos processados (por resultado)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "custom": {} }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        { "expr": "sum by (status) (rate(videos_processed_total[5m]))", "legendFormat": "{{status}}", "refId": "A" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "E-mails enviados",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "custom": {} }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        { "expr": "sum(rate(emails_sent_total[5m]))", "legendFormat": "enviados", "refId": "A" },
+        { "expr": "sum(rate(emails_failed_total[5m]))", "legendFormat": "falhas", "refId": "B" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Duração do processamento (p99)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "custom": {} }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "targets": [
+        { "expr": "histogram_quantile(0.99, sum(rate(video_processing_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p99", "refId": "A" }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["fiapx"],
+  "timezone": "browser",
+  "title": "FIAP X — Processador de Vídeos",
+  "uid": "fiapx",
+  "version": 1
+}

@@ -1,0 +1,9 @@
+# Override de arquitetura arm64 (Apple Silicon / Raspberry Pi).
+# O SMTP catcher usa o Mailpit (multi-arch), drop-in do MailHog (mesmas portas).
+services:
+  mailhog:
+    image: axllent/mailpit:latest
+    container_name: fiapx-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"

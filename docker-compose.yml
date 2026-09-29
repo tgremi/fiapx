@@ -1,0 +1,159 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fiapx-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-fiapx}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fiapx}
+      POSTGRES_DB: ${POSTGRES_DB:-fiapx}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fiapx} -d ${POSTGRES_DB:-fiapx}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: fiapx-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: fiapx-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-fiapx}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-fiapx}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  s3:
+    image: chrislusf/seaweedfs:3.80
+    container_name: fiapx-s3
+    command: server -s3 -s3.config=/etc/seaweedfs/s3.json
+    ports:
+      - "8333:8333"
+    volumes:
+      - ./infra/s3:/etc/seaweedfs:ro
+      - s3_data:/data
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: fiapx-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: fiapx-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASS:-admin}
+    volumes:
+      - ./infra/monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning/dashboards:ro
+      - ./infra/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+
+  auth-service:
+    build: ./services/auth-service
+    container_name: fiapx-auth-service
+    environment:
+      AUTH_PORT: "8081"
+      DATABASE_URL: postgres://${POSTGRES_USER:-fiapx}:${POSTGRES_PASSWORD:-fiapx}@postgres:5432/${POSTGRES_DB:-fiapx}?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  video-api:
+    build: ./services/video-api
+    container_name: fiapx-video-api
+    environment:
+      VIDEO_API_PORT: "8080"
+      DATABASE_URL: postgres://${POSTGRES_USER:-fiapx}:${POSTGRES_PASSWORD:-fiapx}@postgres:5432/${POSTGRES_DB:-fiapx}?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      STORAGE_DRIVER: s3
+      S3_ENDPOINT: s3:8333
+      S3_ACCESS_KEY: test
+      S3_SECRET_KEY: test
+      S3_BUCKET: fiapx
+      S3_REGION: us-east-1
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-fiapx}:${RABBITMQ_PASS:-fiapx}@rabbitmq:5672/
+      REDIS_ADDR: redis:6379
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      s3:
+        condition: service_started
+
+  processing-worker:
+    build: ./services/processing-worker
+    container_name: fiapx-processing-worker
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-fiapx}:${POSTGRES_PASSWORD:-fiapx}@postgres:5432/${POSTGRES_DB:-fiapx}?sslmode=disable
+      STORAGE_DRIVER: s3
+      S3_ENDPOINT: s3:8333
+      S3_ACCESS_KEY: test
+      S3_SECRET_KEY: test
+      S3_BUCKET: fiapx
+      S3_REGION: us-east-1
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-fiapx}:${RABBITMQ_PASS:-fiapx}@rabbitmq:5672/
+      METRICS_PORT: "9090"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      s3:
+        condition: service_started
+
+  notification-service:
+    build: ./services/notification-service
+    container_name: fiapx-notification-service
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-fiapx}:${POSTGRES_PASSWORD:-fiapx}@postgres:5432/${POSTGRES_DB:-fiapx}?sslmode=disable
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-fiapx}:${RABBITMQ_PASS:-fiapx}@rabbitmq:5672/
+      SMTP_HOST: mailhog
+      SMTP_PORT: "1025"
+      SMTP_FROM: no-reply@fiapx.com
+      METRICS_PORT: "9091"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  s3_data:

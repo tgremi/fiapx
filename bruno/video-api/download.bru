@@ -1,0 +1,15 @@
+meta {
+  name: Download do ZIP
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{videoUrl}}/videos/{{videoId}}/download
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'fiapx-services'
+    static_configs:
+      - targets:
+          - 'auth-service:8081'
+          - 'video-api:8080'
+          - 'processing-worker:9090'
+          - 'notification-service:9091'

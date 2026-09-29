@@ -1,0 +1,9 @@
+# Override de arquitetura amd64 (Intel).
+# O SMTP catcher usa o MailHog (imagem amd64-only).
+services:
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: fiapx-mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"

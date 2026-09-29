@@ -1,0 +1,23 @@
+meta {
+  name: Upload Vídeo
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{videoUrl}}/videos
+  body: multipartForm
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:multipartForm {
+  video: @file(/tmp/test.mp4)
+}
+
+script:post-response {
+  bru.setVar("videoId", res.body.id);
+}
