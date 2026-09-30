@@ -128,6 +128,8 @@ services:
       S3_REGION: us-east-1
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-fiapx}:${RABBITMQ_PASS:-fiapx}@rabbitmq:5672/
       METRICS_PORT: "9090"
+    ports:
+      - "9092:9090"
     depends_on:
       postgres:
         condition: service_healthy
@@ -146,6 +148,8 @@ services:
       SMTP_PORT: "1025"
       SMTP_FROM: no-reply@fiapx.com
       METRICS_PORT: "9091"
+    ports:
+      - "9093:9091"
     depends_on:
       postgres:
         condition: service_healthy
