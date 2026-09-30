@@ -31,7 +31,7 @@ fiapx/
 │  ├─ processing-worker/     # módulo Go próprio
 │  └─ notification-service/  # módulo Go próprio
 ├─ infra/                    # docker-compose, k8s, monitoring, s3
-├─ docs/                     # ADRs, C4, roteiro
+├─ docs/                     # ADRs, C4
 ├─ scripts/                  # smoke test
 ├─ docker-compose.yml
 └─ Makefile
