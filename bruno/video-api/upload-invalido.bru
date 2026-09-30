@@ -1,7 +1,7 @@
 meta {
-  name: Upload Vídeo
+  name: Upload Inválido
   type: http
-  seq: 2
+  seq: 7
 }
 
 post {
@@ -15,9 +15,5 @@ auth:bearer {
 }
 
 body:multipartForm {
-  video: @file(../../test.mp4)
-}
-
-script:post-response {
-  bru.setVar("videoId", res.body.id);
+  video: @file(../../invalido.mp4)
 }
