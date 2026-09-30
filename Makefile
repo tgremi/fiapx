@@ -16,7 +16,16 @@ endif
 
 COMPOSE_FILES := -f docker-compose.yml -f docker-compose.$(ARCH).yml
 
-.PHONY: up down logs infra run build test test-integration test-docker test-integration-docker cover cover-integration lint smoke metrics arch help
+# SO: Linux precisa de --add-host para host.docker.internal; Windows/macOS
+# (Docker Desktop) já resolvem o nome nativamente.
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+DIND_EXTRA := --add-host host.docker.internal:host-gateway
+else
+DIND_EXTRA :=
+endif
+
+.PHONY: up down logs infra run build test test-integration test-docker test-integration-docker docker-prep cover cover-integration lint smoke metrics arch help
 
 arch:
 	@echo "arquitetura detectada: $(ARCH) ($(UNAME_M))"
@@ -49,12 +58,12 @@ build-%:
 test: $(addprefix test-,$(SERVICES))
 
 test-%:
-	@cd services/$* && set -o pipefail && go test ./... -cover -count=1 2>&1 | grep -vE 'coverage: 0\.0% of statements|\[no test files\]'
+	@cd services/$* && set -o pipefail && go test ./... -cover -count=1 -timeout 5m 2>&1 | grep -vE 'coverage: 0\.0% of statements|\[no test files\]'
 
 test-integration: $(addprefix integration-,$(SERVICES))
 
 integration-%:
-	@cd services/$* && go test ./... -tags integration -count=1 -v 2>&1 | grep -vE '^2026/|^[0-9]{4}/'
+	@cd services/$* && go test ./... -tags integration -count=1 -timeout 10m -v 2>&1 | grep -vE '^2026/|^[0-9]{4}/'
 
 # --- testes rodando DENTRO de um container Go (sem precisar de Go local) -------
 test-docker: $(addprefix testdocker-,$(SERVICES))
@@ -65,7 +74,7 @@ testdocker-%:
 	  -v $(CURDIR)/services/$*:/app \
 	  -w /app \
 	  -e CGO_ENABLED=0 \
-	  golang:1.27-alpine go test ./... -count=1
+	  golang:1.27-alpine go test ./... -count=1 -timeout 5m
 
 test-integration-docker: $(addprefix intdocker-,$(SERVICES))
 
@@ -78,8 +87,20 @@ intdocker-%:
 	  -e CGO_ENABLED=0 \
 	  -e TESTCONTAINERS_RYUK_DISABLED=true \
 	  -e TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal \
-	  --add-host host.docker.internal:host-gateway \
-	  golang:1.27-alpine go test ./... -tags integration -count=1
+	  $(DIND_EXTRA) \
+	  golang:1.27-alpine go test ./... -tags integration -count=1 -timeout 10m
+
+# --- baixa imagem, imagens do Testcontainers e dependências Go (1ª execução) ----
+docker-prep:
+	docker pull golang:1.27-alpine
+	docker pull rabbitmq:3-management-alpine
+	docker pull postgres:16-alpine
+	docker pull redis:7-alpine
+	@for s in $(SERVICES); do \
+	  echo ">> aquecendo dependências de $$s"; \
+	  docker run --rm -v fiapx-gomod:/go/pkg/mod -v $(CURDIR)/services/$$s:/app -w /app golang:1.27-alpine go mod download; \
+	done
+	@echo "Cache aquecido. 'make test-docker' e 'make test-integration-docker' agora são rápidos."
 
 cover: $(addprefix cover-,$(SERVICES))
 
@@ -125,6 +146,7 @@ help:
 	@echo "  make cover-integration - cobertura incluindo integração (exige Docker)"
 	@echo ""
 	@echo "Testes (via Docker, sem Go local):"
+	@echo "  make docker-prep - baixa imagem Go + imagens do Testcontainers + deps (rode 1x)"
 	@echo "  make test-docker - unitários dentro de um container Go"
 	@echo "  make test-integration-docker - integração em container (sock Docker + host.docker.internal)"
 	@echo ""
