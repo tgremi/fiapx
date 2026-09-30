@@ -58,12 +58,12 @@ build-%:
 test: $(addprefix test-,$(SERVICES))
 
 test-%:
-	@cd services/$* && set -o pipefail && go test ./... -cover -count=1 -timeout 5m 2>&1 | grep -vE 'coverage: 0\.0% of statements|\[no test files\]'
+	@cd services/$* && go test ./... -cover -count=1 -timeout 5m
 
 test-integration: $(addprefix integration-,$(SERVICES))
 
 integration-%:
-	@cd services/$* && go test ./... -tags integration -count=1 -timeout 10m -v 2>&1 | grep -vE '^2026/|^[0-9]{4}/'
+	@cd services/$* && go test ./... -tags integration -count=1 -timeout 10m
 
 # --- testes rodando DENTRO de um container Go (sem precisar de Go local) -------
 test-docker: $(addprefix testdocker-,$(SERVICES))
