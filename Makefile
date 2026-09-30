@@ -71,13 +71,14 @@ test-integration-docker: $(addprefix intdocker-,$(SERVICES))
 
 intdocker-%:
 	docker run --rm \
-	  --network host \
 	  -v /var/run/docker.sock:/var/run/docker.sock \
 	  -v fiapx-gomod:/go/pkg/mod \
 	  -v $(CURDIR)/services/$*:/app \
 	  -w /app \
 	  -e CGO_ENABLED=0 \
 	  -e TESTCONTAINERS_RYUK_DISABLED=true \
+	  -e TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal \
+	  --add-host host.docker.internal:host-gateway \
 	  golang:1.27-alpine go test ./... -tags integration -count=1
 
 cover: $(addprefix cover-,$(SERVICES))
@@ -125,7 +126,7 @@ help:
 	@echo ""
 	@echo "Testes (via Docker, sem Go local):"
 	@echo "  make test-docker - unitários dentro de um container Go"
-	@echo "  make test-integration-docker - integração em container (sock Docker + host network)"
+	@echo "  make test-integration-docker - integração em container (sock Docker + host.docker.internal)"
 	@echo ""
 	@echo "  make lint        - golangci-lint em todos os serviços"
 	@echo "  make smoke       - smoke test end-to-end (exige 'make up' + curl/ffmpeg)"
