@@ -101,7 +101,8 @@ URLs / portas:
 |---|---|
 | `video-api` | http://localhost:8080 |
 | `auth-service` | http://localhost:8081 |
-| `processing-worker` / `notification-service` | consumidores (sem HTTP; métricas em :9090/:9091) |
+| `processing-worker` (métricas) | http://localhost:9092/metrics |
+| `notification-service` (métricas) | http://localhost:9093/metrics |
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3000 (admin/admin) |
 | MailHog (UI) | http://localhost:8025 |
@@ -162,8 +163,12 @@ Métricas expostas por serviço:
 |---|---|---|
 | auth-service | `:8081/metrics` | `auth_registrations_total`, `auth_logins_total` |
 | video-api | `:8080/metrics` | `videos_uploaded_total`, `videos_downloaded_total` |
-| processing-worker | `:9090/metrics` | `videos_processed_total{status}`, `video_processing_duration_seconds` |
-| notification-service | `:9091/metrics` | `emails_sent_total`, `emails_failed_total` |
+| processing-worker | `:9092/metrics` | `videos_processed_total{status}`, `video_processing_duration_seconds` |
+| notification-service | `:9093/metrics` | `emails_sent_total`, `emails_failed_total` |
+
+> Os workers escutam em `:9090`/`:9091` **dentro** da rede Docker (o Prometheus
+> faz scrape nesses endpoints). No host, eles são expostos em `:9092`/`:9093`.
+> Use `make metrics` para consultar os valores atuais de todas as métricas.
 
 Todos os serviços HTTP também expõem `http_requests_total` e
 `http_request_duration_seconds`. O Grafana já vem provisionado com o datasource
